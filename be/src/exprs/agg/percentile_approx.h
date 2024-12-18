@@ -27,6 +27,7 @@ namespace starrocks {
 struct PercentileApproxState {
 public:
     PercentileApproxState() : percentile(new PercentileValue()) {}
+    explicit PercentileApproxState(double compression) : percentile(new PercentileValue(compression)) {}
     ~PercentileApproxState() = default;
 
     int64_t mem_usage() const { return percentile->mem_usage(); }
@@ -34,11 +35,35 @@ public:
     std::unique_ptr<PercentileValue> percentile;
     double targetQuantile = -1.0;
     bool is_null = true;
+    bool is_init = false;
 };
 
 class PercentileApproxAggregateFunction final
         : public AggregateFunctionBatchHelper<PercentileApproxState, PercentileApproxAggregateFunction> {
+private:
+    static constexpr double DEFAULT_COMPRESSION_FACTOR = 10000;
+
 public:
+    static double get_compression_factor(FunctionContext* ctx) {
+        double compression = DEFAULT_COMPRESSION_FACTOR;
+        if (ctx->get_num_args() > 2) {
+            compression = ColumnHelper::get_const_value<TYPE_DOUBLE>(ctx->get_constant_column(2));
+            if (compression < 2048 || compression > 10000) {
+                compression = DEFAULT_COMPRESSION_FACTOR;
+            }
+        }
+        return compression;
+    }
+
+    void init_state_if_necessary(FunctionContext* ctx, AggDataPtr __restrict state) const {
+        if (this->data(state).is_init) {
+            return;
+        }
+        this->data(state).is_init = true;
+        const double compression = get_compression_factor(ctx);
+        this->data(state).percentile->resetWithCompression(compression);
+    }
+
     void update(FunctionContext* ctx, const Column** columns, AggDataPtr state, size_t row_num) const override {
         double column_value;
         if (columns[0]->is_nullable()) {
@@ -57,6 +82,7 @@ public:
 
         DCHECK(!columns[1]->is_null(0));
 
+        init_state_if_necessary(ctx, state);
         int64_t prev_memory = data(state).percentile->mem_usage();
         data(state).percentile->add(implicit_cast<float>(column_value));
         data(state).targetQuantile = columns[1]->get(0).get_double();
@@ -79,9 +105,11 @@ public:
         double quantile;
         memcpy(&quantile, src.data, sizeof(double));
 
-        PercentileApproxState src_percentile;
+        PercentileApproxState src_percentile(get_compression_factor(ctx));
         src_percentile.targetQuantile = quantile;
         src_percentile.percentile->deserialize((char*)src.data + sizeof(double));
+
+        init_state_if_necessary(ctx, state);
         int64_t prev_memory = data(state).percentile->mem_usage();
         data(state).percentile->merge(src_percentile.percentile.get());
         data(state).targetQuantile = quantile;

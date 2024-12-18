@@ -124,7 +124,7 @@ class TDigest {
     using TDigestQueue = std::priority_queue<const TDigest*, std::vector<const TDigest*>, TDigestComparator>;
 
 public:
-    TDigest() : TDigest(1000) {}
+    TDigest() : TDigest(10000) {}
     explicit TDigest(Value compression) : TDigest(compression, 0) {}
     explicit TDigest(const char* src) { this->deserialize(src); }
     explicit TDigest(const Slice& src) { this->deserialize(src.data); }

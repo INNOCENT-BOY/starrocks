@@ -21,6 +21,10 @@ class PercentileValue {
 public:
     PercentileValue() { _type = TDIGEST; }
 
+    explicit PercentileValue(double compression) : _tdigest(compression) {
+        _type = TDIGEST;
+    }
+
     explicit PercentileValue(const Slice& src) {
         switch (*src.data) {
         case PercentileDataType::TDIGEST:
@@ -30,6 +34,10 @@ public:
             DCHECK(false);
         }
         _tdigest.deserialize(src.data + 1);
+    }
+
+    void resetWithCompression(double compression) {
+        this->_tdigest = TDigest(compression);
     }
 
     void add(float value) { _tdigest.add(value); }
