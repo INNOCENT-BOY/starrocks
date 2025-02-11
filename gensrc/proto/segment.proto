@@ -167,6 +167,12 @@ message JsonMetaPB {
     optional bool has_remain = 3;
 
     optional bytes remain_filter = 4;
+
+    optional double flat_json_null_factor = 5;
+
+    optional double flat_json_sparsity_factory = 6;
+
+    optional int64 flat_json_column_max = 7;
 }
 
 message ColumnMetaPB {
