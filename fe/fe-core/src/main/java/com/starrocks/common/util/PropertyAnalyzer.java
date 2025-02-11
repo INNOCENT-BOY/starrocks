@@ -54,6 +54,7 @@ import com.starrocks.catalog.Column;
 import com.starrocks.catalog.ColumnId;
 import com.starrocks.catalog.DataProperty;
 import com.starrocks.catalog.Database;
+import com.starrocks.catalog.FlatJsonProperty;
 import com.starrocks.catalog.InternalCatalog;
 import com.starrocks.catalog.KeysType;
 import com.starrocks.catalog.MaterializedView;
@@ -139,7 +140,6 @@ public class PropertyAnalyzer {
     public static final String PROPERTIES_COLOCATE_WITH = "colocate_with";
 
     public static final String PROPERTIES_TIMEOUT = "timeout";
-
     public static final String PROPERTIES_DISTRIBUTION_TYPE = "distribution_type";
     public static final String PROPERTIES_SEND_CLEAR_ALTER_TASK = "send_clear_alter_tasks";
 
@@ -162,6 +162,13 @@ public class PropertyAnalyzer {
     public static final String PROPERTIES_BINLOG_TTL = "binlog_ttl_second";
 
     public static final String PROPERTIES_BINLOG_MAX_SIZE = "binlog_max_size";
+    public static final String PROPERTIES_FLAT_JSON_ENABLE = "flat_json.enable";
+
+    public static final String PROPERTIES_FLAT_JSON_NULL_FACTOR = "flat_json.null.factor";
+
+    public static final String PROPERTIES_FLAT_JSON_SPARSITY_FACTOR = "flat_json.sparsity.factor";
+
+    public static final String PROPERTIES_FLAT_JSON_COLUMN_MAX = "flat_json.column.max";
 
     public static final String PROPERTIES_STORAGE_TYPE_COLUMN = "column";
     public static final String PROPERTIES_STORAGE_TYPE_COLUMN_WITH_ROW = "column_with_row";
@@ -870,6 +877,15 @@ public class PropertyAnalyzer {
             }
         }
         return -1;
+    }
+
+    public static FlatJsonProperty analyzeFlatJson(Map<String, String> properties) throws AnalysisException {
+        FlatJsonProperty flatJsonProperty = new FlatJsonProperty(properties);
+        properties.remove(PROPERTIES_FLAT_JSON_ENABLE);
+        properties.remove(PROPERTIES_FLAT_JSON_NULL_FACTOR);
+        properties.remove(PROPERTIES_FLAT_JSON_SPARSITY_FACTOR);
+        properties.remove(PROPERTIES_FLAT_JSON_COLUMN_MAX);
+        return flatJsonProperty;
     }
 
     // analyzeCompressionType will parse the compression type from properties

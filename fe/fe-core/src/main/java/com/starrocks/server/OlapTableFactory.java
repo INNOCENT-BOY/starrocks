@@ -27,6 +27,7 @@ import com.starrocks.catalog.Database;
 import com.starrocks.catalog.DistributionInfo;
 import com.starrocks.catalog.ExpressionRangePartitionInfo;
 import com.starrocks.catalog.ExternalOlapTable;
+import com.starrocks.catalog.FlatJsonProperty;
 import com.starrocks.catalog.HashDistributionInfo;
 import com.starrocks.catalog.KeysType;
 import com.starrocks.catalog.ListPartitionInfo;
@@ -652,6 +653,14 @@ public class OlapTableFactory implements AbstractTableFactory {
             }
             table.setCompressionType(compressionType);
             table.setCompressionLevel(compressionLevel);
+
+            FlatJsonProperty flatJsonProperty;
+            try {
+                flatJsonProperty = PropertyAnalyzer.analyzeFlatJson(properties);
+            } catch (AnalysisException e) {
+                throw new DdlException(e.getMessage());
+            }
+            table.setFlatJson(flatJsonProperty);
 
             // partition live number
             if (properties != null && properties.containsKey(PropertyAnalyzer.PROPERTIES_PARTITION_LIVE_NUMBER)) {

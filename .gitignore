@@ -28,6 +28,10 @@ venv/
 custom_env.sh
 ut_dir
 log/
+fe/bin
+fe/conf
+fe/meta
+fe/webroot
 fe_plugins/*/target
 fe_plugins/output
 fe/mocked
@@ -89,3 +93,5 @@ be/tags
 build/
 cmake-build-debug/
 CMakeLists.txt
+
+thirdparty/*

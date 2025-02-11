@@ -40,7 +40,7 @@ public:
 class PercentileApproxAggregateFunction final
         : public AggregateFunctionBatchHelper<PercentileApproxState, PercentileApproxAggregateFunction> {
 private:
-    static constexpr double MIN_COMPRESSION = 2048.0;
+    static constexpr double MIN_COMPRESSION = 10.0;
     static constexpr double MAX_COMPRESSION = 10000.0;
     static constexpr double DEFAULT_COMPRESSION_FACTOR = 10000.0;
 

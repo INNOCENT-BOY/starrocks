@@ -3029,6 +3029,14 @@ public class OlapTable extends Table {
         return result;
     }
 
+    public void setFlatJson(FlatJsonProperty flatJsonProperty) {
+        if (tableProperty == null) {
+            tableProperty = new TableProperty(new HashMap<>());
+        }
+        tableProperty.modifyTableProperties(flatJsonProperty.getProperties());
+        tableProperty.buildFlatJsonProperty();
+    }
+
     public void setBinlogAvailableVersion(Map<String, String> properties) {
         if (tableProperty == null) {
             tableProperty = new TableProperty(new HashMap<>());

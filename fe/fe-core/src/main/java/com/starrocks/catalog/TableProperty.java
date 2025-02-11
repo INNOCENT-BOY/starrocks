@@ -88,6 +88,7 @@ import java.util.stream.Collectors;
 public class TableProperty implements Writable, GsonPostProcessable {
     private static final Logger LOG = LogManager.getLogger(TableProperty.class);
     public static final String DYNAMIC_PARTITION_PROPERTY_PREFIX = "dynamic_partition";
+    public static final String FLAT_JSON_PROPERTY_PREFIX = "flat_json";
     public static final int INVALID = -1;
 
     public static final String BINLOG_PROPERTY_PREFIX = "binlog";
@@ -186,8 +187,11 @@ public class TableProperty implements Writable, GsonPostProcessable {
     @SerializedName(value = "properties")
     private Map<String, String> properties;
 
+    private FlatJsonProperty flatJsonProperty;
+
     private transient DynamicPartitionProperty dynamicPartitionProperty =
             new DynamicPartitionProperty(Maps.newHashMap());
+
     // table's default replication num
     private Short replicationNum = RunMode.defaultReplicationNum();
 
@@ -448,6 +452,17 @@ public class TableProperty implements Writable, GsonPostProcessable {
             }
         }
         dynamicPartitionProperty = new DynamicPartitionProperty(dynamicPartitionProperties);
+        return this;
+    }
+
+    public TableProperty buildFlatJsonProperty() {
+        HashMap<String, String> flatJsonProperties = new HashMap<>();
+        for (Map.Entry<String, String> entry : properties.entrySet()) {
+            if (entry.getKey().startsWith(FLAT_JSON_PROPERTY_PREFIX)) {
+                flatJsonProperties.put(entry.getKey(), entry.getValue());
+            }
+        }
+        flatJsonProperty = new FlatJsonProperty(flatJsonProperties);
         return this;
     }
 
