@@ -349,6 +349,7 @@ TabletSharedPtr TabletManager::_create_tablet_meta_and_dir_unlocked(const TCreat
         }
 
         TabletSharedPtr new_tablet = Tablet::create_tablet_from_meta(tablet_meta, data_dir);
+        new_tablet->tablet_schema()
         st = fs::create_directories(new_tablet->schema_hash_path());
         if (!st.ok()) {
             LOG(WARNING) << "Fail to create " << new_tablet->schema_hash_path() << ": " << st.to_string();
@@ -1382,7 +1383,7 @@ Status TabletManager::_create_inital_rowset_unlocked(const TCreateTabletReq& req
             context.version = version;
             // there is no data in init rowset, so overlapping info is unknown.
             context.segments_overlap = OVERLAP_UNKNOWN;
-
+            context.flat_json_config = tablet->flat_json_config();
             std::unique_ptr<RowsetWriter> rowset_writer;
             st = RowsetFactory::create_rowset_writer(context, &rowset_writer);
             if (!st.ok()) {
