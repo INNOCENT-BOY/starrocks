@@ -1624,7 +1624,7 @@ public abstract class Type implements Cloneable {
             case DATE:
                 return 10;
             case DATETIME:
-                return 19;
+                return 23;
             case FLOAT:
                 return 12;
             case DOUBLE:
