@@ -1177,7 +1177,7 @@ build_avro_cpp() {
     mkdir -p build
     cd build
     $CMAKE_CMD .. -DCMAKE_BUILD_TYPE=Release -DBOOST_ROOT=${TP_INSTALL_DIR} -DBoost_USE_STATIC_RUNTIME=ON -DSNAPPY_INCLUDE_DIR=${TP_INSTALL_DIR}/include -DSNAPPY_LIBRARIES=${TP_INSTALL_DIR}/lib
-    ${BUILD_SYSTEM} -j$PARALLEL
+    LIBRARY_PATH=${TP_INSTALL_DIR}/lib64:$LIBRARY_PATH LD_LIBRARY_PATH=${STARROCKS_GCC_HOME}/lib64:$LD_LIBRARY_PATH ${BUILD_SYSTEM} -j$PARALLEL
     # cp include and lib
     cp libavrocpp_s.a ${TP_INSTALL_DIR}/lib64/
     cp -r ../include/avro ${TP_INSTALL_DIR}/include/avrocpp
