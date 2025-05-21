@@ -54,9 +54,13 @@ import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.Clock;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
@@ -314,6 +318,28 @@ public class TimeUtils {
         }
     }
 
+    public static ChronoUnit convertUnitIdentifierToChronoUnit(String unitIdentifierDescription) throws DdlException {
+        switch (unitIdentifierDescription) {
+            case "SECOND":
+                return ChronoUnit.SECONDS;
+            case "MINUTE":
+                return ChronoUnit.MINUTES;
+            case "HOUR":
+                return ChronoUnit.HOURS;
+            case "DAY":
+                return ChronoUnit.DAYS;
+            case "WEEK":
+                return ChronoUnit.WEEKS;
+            case "MONTH":
+                return ChronoUnit.MONTHS;
+            case "YEAR":
+                return ChronoUnit.YEARS;
+            default:
+                throw new DdlException(
+                        "Can not get TimeUnit from UnitIdentifier description: " + unitIdentifierDescription);
+        }
+    }
+
     public static long convertTimeUnitValueToSecond(long value, TimeUnit unit) {
         return TimeUnit.SECONDS.convert(value, unit);
     }
@@ -345,6 +371,31 @@ public class TimeUtils {
         long step = difference / intervalSecond + 1;
         return startTimeSecond + step * intervalSecond;
     }
+
+    public static long getNextValidTimeSecondExt(long startTimeSecond, long targetTimeSecond,
+                                                 long period, ChronoUnit chronoUnit) throws DdlException {
+        if (startTimeSecond > targetTimeSecond) {
+            return startTimeSecond;
+        }
+
+        if (period < 1) {
+            throw new DdlException("Period must be >= 1");
+        }
+
+        ZoneId zone = ZoneId.systemDefault();
+        Instant startInstant = Instant.ofEpochSecond(startTimeSecond);
+        ZonedDateTime startDateTime = startInstant.atZone(zone);
+        Instant targetInstant = Instant.ofEpochSecond(targetTimeSecond);
+        ZonedDateTime targetDateTime = targetInstant.atZone(zone);
+
+        long unitsBetween = startDateTime.until(targetDateTime, chronoUnit);
+        long steps = (unitsBetween / period) + 1;
+
+        ZonedDateTime nextValid = startDateTime.plus(period * steps, chronoUnit);
+        return nextValid.toEpochSecond();
+    }
+
+
 
     public static PeriodDuration parseHumanReadablePeriodOrDuration(String text) {
         try {

@@ -284,6 +284,9 @@ public class MaterializedViewAnalyzer {
     static class MaterializedViewAnalyzerVisitor implements AstVisitor<Void, ConnectContext> {
 
         public enum RefreshTimeUnit {
+            YEAR,
+            MONTH,
+            WEEK,
             DAY,
             HOUR,
             MINUTE,

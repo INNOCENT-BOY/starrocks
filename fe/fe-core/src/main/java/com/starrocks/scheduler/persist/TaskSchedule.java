@@ -18,6 +18,7 @@ package com.starrocks.scheduler.persist;
 import com.google.gson.annotations.SerializedName;
 import com.starrocks.sql.optimizer.Utils;
 
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
 
 public class TaskSchedule {
@@ -30,12 +31,12 @@ public class TaskSchedule {
     private long period;
 
     @SerializedName("timeUnit")
-    private TimeUnit timeUnit;
+    private ChronoUnit timeUnit;
 
     public TaskSchedule() {
     }
 
-    public TaskSchedule(long startTime, long period, TimeUnit timeUnit) {
+    public TaskSchedule(long startTime, long period, ChronoUnit timeUnit) {
         this.startTime = startTime;
         this.period = period;
         this.timeUnit = timeUnit;
@@ -57,11 +58,11 @@ public class TaskSchedule {
         this.period = period;
     }
 
-    public TimeUnit getTimeUnit() {
+    public ChronoUnit getTimeUnit() {
         return timeUnit;
     }
 
-    public void setTimeUnit(TimeUnit timeUnit) {
+    public void setTimeUnit(ChronoUnit timeUnit) {
         this.timeUnit = timeUnit;
     }
 

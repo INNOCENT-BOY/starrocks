@@ -38,6 +38,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -91,7 +92,7 @@ public class ShowTaskTest {
         periodTask.setDefinition("select 1");
         periodTask.setExpireTime(0L);
         long startTime = Utils.getLongFromDateTime(LocalDateTime.of(2020, 4, 21, 0, 0, 0));
-        TaskSchedule taskSchedule = new TaskSchedule(startTime, 5, TimeUnit.SECONDS);
+        TaskSchedule taskSchedule = new TaskSchedule(startTime, 5, ChronoUnit.SECONDS);
         periodTask.setSchedule(taskSchedule);
         periodTask.setType(Constants.TaskType.PERIODICAL);
         taskManager.createTask(periodTask, true);
@@ -131,7 +132,7 @@ public class ShowTaskTest {
         unknownTask.setDefinition("select 1");
         unknownTask.setExpireTime(0L);
         long startTime = Utils.getLongFromDateTime(LocalDateTime.of(2020, 4, 21, 0, 0, 0));
-        TaskSchedule taskSchedule = new TaskSchedule(startTime, 5, TimeUnit.SECONDS);
+        TaskSchedule taskSchedule = new TaskSchedule(startTime, 5, ChronoUnit.SECONDS);
         unknownTask.setSchedule(taskSchedule);
         unknownTask.setType(null);
         taskManager.createTask(unknownTask, true);

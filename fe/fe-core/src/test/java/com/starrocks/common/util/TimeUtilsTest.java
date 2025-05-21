@@ -30,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
@@ -249,6 +250,63 @@ public class TimeUtilsTest {
             // 2022-04-21 23:32:18
             Assert.assertEquals(1650555138L, TimeUtils.getNextValidTimeSecond(1650555138L, targetTimeSecond,
                     9, TimeUnit.DAYS));
+        } catch (DdlException e) {
+            Assert.fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testGetNextValidTimeSecondExt() {
+        // 2022-04-21 20:45:11
+        long startTimeSecond = 1650545111L;
+        // 2022-04-21 23:32:11
+        long targetTimeSecond = 1650555131L;
+//        try {
+//            TimeUtils.getNextValidTimeSecond(startTimeSecond, targetTimeSecond, 2, TimeUnit.NANOSECONDS);
+//        } catch (DdlException e) {
+//            Assert.assertEquals("Can not get next valid time second," +
+//                    "startTimeSecond:1650545111 period:2 timeUnit:NANOSECONDS", e.getMessage());
+//        }
+//        try {
+//            TimeUtils.getNextValidTimeSecond(startTimeSecond, targetTimeSecond, 2, TimeUnit.MILLISECONDS);
+//        } catch (DdlException e) {
+//            Assert.assertEquals("Can not get next valid time second," +
+//                    "startTimeSecond:1650545111 period:2 timeUnit:MILLISECONDS", e.getMessage());
+//        }
+        try {
+            // 2022-04-21 23:32:12
+            Assert.assertEquals(1650555132L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    1000, ChronoUnit.MILLIS));
+            // 2022-04-21 23:32:12
+            Assert.assertEquals(1650555132L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    1, ChronoUnit.SECONDS));
+            // 2022-04-21 23:32:16
+            Assert.assertEquals(1650555136L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    5, ChronoUnit.SECONDS));
+            // 2022-04-21 23:32:15
+            Assert.assertEquals(1650555135L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    7, ChronoUnit.SECONDS));
+            // 2022-04-21 23:32:12
+            Assert.assertEquals(1650555132L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    11, ChronoUnit.SECONDS));
+            // 2022-04-21 23:33:31
+            Assert.assertEquals(1650555211L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    101, ChronoUnit.SECONDS));
+            // 2022-04-21 23:48:20
+            Assert.assertEquals(1650556100L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    999, ChronoUnit.SECONDS));
+            // 2022-04-21 23:45:11
+            Assert.assertEquals(1650555911L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    3, ChronoUnit.HOURS));
+            // 2022-04-22 03:45:11
+            Assert.assertEquals(1650570311L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    7, ChronoUnit.HOURS));
+            // 2022-04-30 20:45:11
+            Assert.assertEquals(1651322711L, TimeUtils.getNextValidTimeSecondExt(startTimeSecond, targetTimeSecond,
+                    9, ChronoUnit.DAYS));
+            // 2022-04-21 23:32:18
+            Assert.assertEquals(1650555138L, TimeUtils.getNextValidTimeSecondExt(1650555138L, targetTimeSecond,
+                    9, ChronoUnit.DAYS));
         } catch (DdlException e) {
             Assert.fail(e.getMessage());
         }

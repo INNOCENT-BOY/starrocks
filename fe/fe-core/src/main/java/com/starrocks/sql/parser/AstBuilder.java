@@ -1968,7 +1968,7 @@ public class AstBuilder extends StarRocksBaseVisitor<ParseNode> {
 
     public static final ImmutableList<String> MATERIALIZEDVIEW_REFRESHSCHEME_SUPPORT_UNIT_IDENTIFIERS =
             new ImmutableList.Builder<String>()
-                    .add("SECOND").add("MINUTE").add("HOUR").add("DAY")
+                    .add("SECOND").add("MINUTE").add("HOUR").add("DAY").add("WEEK").add("MONTH").add("YEAR")
                     .build();
 
     private void checkMaterializedViewAsyncRefreshSchemeUnitIdentifier(
