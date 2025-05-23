@@ -100,6 +100,17 @@ public class StatisticExecutor {
         return executeStatisticDQL(context, sql);
     }
 
+    public List<TStatisticData> queryStatistic(ConnectContext context, String tableUUID, Table table) {
+        if (table == null) {
+            // Statistical information query is an unlocked operation,
+            // so it is possible for the table to be deleted while the code is running
+            return Collections.emptyList();
+        }
+
+        String sql = StatisticSQLBuilder.buildQueryExternalFullStatisticsSQL(tableUUID);
+        return executeStatisticDQL(context, sql);
+    }
+
     public List<TStatisticData> queryStatisticSync(ConnectContext context, Long dbId, Long tableId,
                                                    List<String> columnNames) {
         BasicStatsMeta meta = GlobalStateMgr.getCurrentState().getAnalyzeMgr().getTableBasicStatsMeta(tableId);

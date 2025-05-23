@@ -14,9 +14,22 @@
 
 package com.starrocks.scheduler.mv;
 
+import com.starrocks.catalog.OlapTable;
 import com.starrocks.catalog.Partition;
 import com.starrocks.catalog.Table;
+import com.starrocks.qe.ConnectContext;
+import com.starrocks.qe.SimpleExecutor;
+import com.starrocks.sql.optimizer.rule.transformation.partition.PartitionSelector;
+import com.starrocks.statistic.StatisticExecutor;
+import com.starrocks.statistic.StatisticSQLBuilder;
+import com.starrocks.statistic.StatisticUtils;
+import com.starrocks.thrift.TResultBatch;
+import com.starrocks.thrift.TResultSinkType;
+import com.starrocks.thrift.TStatisticData;
+import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,6 +45,9 @@ public class MVRefreshPartitionSelector {
 
     // ensure that at least one partition is selected
     private boolean isFirstPartition = true;
+
+    private StatisticExecutor statisticExecutor = new StatisticExecutor();
+    private final SimpleExecutor executor = new SimpleExecutor("SPMExecutor", TResultSinkType.HTTP_PROTOCAL);
 
     public MVRefreshPartitionSelector(long maxRowsThreshold, long maxBytesThreshold, int maxPartitionNum) {
         this.maxRowsThreshold = maxRowsThreshold;
@@ -83,12 +99,44 @@ public class MVRefreshPartitionSelector {
 
         for (Map.Entry<Table, Set<String>> entry : partitionSet.entrySet()) {
             Table table = entry.getKey();
+            Map<String, Pair<Long, Long>> partitionToStats = getPartitionStats(table);
             for (String partitionName : entry.getValue()) {
-                Partition partition = table.getPartition(partitionName);
-                totalRows += partition.getRowCount();
-                totalBytes += partition.getDataSize();
+                Pair<Long, Long> stat = partitionToStats.get(partitionName);
+                totalRows += stat.getLeft();
+                totalBytes += stat.getRight();
             }
         }
         return new long[] {totalRows, totalBytes};
+    }
+
+    /**
+     * Returns a map of partition statistics for the given table.
+     * Each entry in the map represents a partition, with the key being the partition name,
+     * and the value being a pair of (rowCount, dataSize).
+     * For internal OLAP tables, statistics are retrieved directly from the partition metadata.
+     * For external tables, only Hive, Iceberg, Hudi, and Delta Lake are currently supported for statistics collection.
+     * Statistics for these external tables are retrieved via the statistic executor and may be partial.
+     * Note: For external tables, statistics are aggregated by partition name,
+     * since there may be multiple statistic records for the same partition.
+     *
+     * @param table the table to collect statistics from
+     * @return a map of partition name to (rowCount, dataSize)
+     */
+    private Map<String, Pair<Long, Long>> getPartitionStats(Table table) {
+        Map<String, Pair<Long, Long>> result = new HashMap<>();
+
+        if (table instanceof OlapTable) {
+            OlapTable olapTable = (OlapTable) table;
+            for (Partition partition : olapTable.getPartitions()) {
+                String partitionName = partition.getName();
+                long rowCount = partition.getRowCount();
+                long dataSize = partition.getDataSize();
+                result.put(partitionName, Pair.of(rowCount, dataSize));
+            }
+        } else {
+            result = PartitionSelector.getExternalTablePartitionStats(table);
+        }
+
+        return result;
     }
 }

@@ -90,6 +90,12 @@ public class StatisticSQLBuilder {
                     + " WHERE $predicate"
                     + " GROUP BY table_uuid, column_name";
 
+    private static final String QUERY_EXTERNAL_PARTITION_STATISTIC_V3_TEMPLATE =
+            "SELECT partition_name, sum(row_count), cast(sum(data_size) as bigint) "
+                    + "FROM " + StatsConstants.EXTERNAL_FULL_STATISTICS_TABLE_NAME
+                    + " WHERE $predicate"
+                    + " GROUP BY partition_name";
+
     private static final String QUERY_HISTOGRAM_STATISTIC_TEMPLATE =
             "SELECT cast(" + STATISTIC_HISTOGRAM_VERSION + " as INT), db_id, table_id, column_name,"
                     + " cast(json_object(\"buckets\", buckets, \"mcv\", mcv) as varchar)"
@@ -202,6 +208,13 @@ public class StatisticSQLBuilder {
         });
 
         return Joiner.on(" UNION ALL ").join(querySQL);
+    }
+
+    public static String buildQueryExternalFullStatisticsSQL(String tableUUID) {
+        VelocityContext context = new VelocityContext();
+        context.put("tableUUID", tableUUID);
+        context.put("predicate", "table_uuid = \"" + tableUUID + "\"");
+        return build(context, QUERY_EXTERNAL_PARTITION_STATISTIC_V3_TEMPLATE);
     }
 
     public static String buildMultiColumnCombinedStatisticsSQL(List<Long> tableIds) {

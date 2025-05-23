@@ -81,6 +81,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,10 +97,14 @@ public class PartitionSelector {
     // why not use `PARTITION_ID` here? because partition_id in partitions_meta is physical partition id which may be confused.
     private static final String PARTITIONS_META_TEMPLATE = "SELECT PARTITION_NAME FROM INFORMATION_SCHEMA.PARTITIONS_META " +
             "WHERE DB_NAME ='%s' and TABLE_NAME='%s' AND %s;";
+    private static final String EXTERNAL_TABLE_PARTITION_META_TEMPLATE = "SELECT PARTITION_NAME, SUM(ROW_COUNT) as ROW_COUNT," +
+            "CAST(SUM(DATA_SIZE) AS BIGINT) as DATA_SIZE FROM _statistics_.external_column_statistics " +
+            "WHERE TABLE_UUID = '%s' GROUP BY PARTITION_NAME;";
     private static final String JSON_QUERY_TEMPLATE = "CAST(JSON_QUERY(%s, '$[0].[%d]') AS %s)";
 
     /**
      * Return filtered partition names by whereExpr.
+     *
      * @isRecyclingOrRetention, true for recycling/dropping condition, false for retention condition.
      */
     public static List<String> getPartitionNamesByExpr(ConnectContext context,
@@ -117,6 +122,7 @@ public class PartitionSelector {
 
     /**
      * Return filtered partition ids by whereExpr.
+     *
      * @isRecyclingOrRetention, true for recycling/dropping condition, false for retention condition.
      */
     public static List<Long> getPartitionIdsByExpr(ConnectContext context,
@@ -492,12 +498,13 @@ public class PartitionSelector {
 
     /**
      * Check if the eval result is satisfied and short-circuit the evaluation.
-     // TODO: refactor and move it to a common place
-     * @param rewriter : rewriter to rewrite the partition condition scalar operator by constant fold and so on
+     * // TODO: refactor and move it to a common place
+     *
+     * @param rewriter                  : rewriter to rewrite the partition condition scalar operator by constant fold and so on
      * @param replaceColumnRefRewriter: replace columnRef with literal
-     * @param scalarOperator : partition condition scalar operator
-     * @param isRecyclingCondition : true for recycling/dropping condition, false for retention condition.
-     * @param record : used to record the state of eval result
+     * @param scalarOperator            : partition condition scalar operator
+     * @param isRecyclingCondition      : true for recycling/dropping condition, false for retention condition.
+     * @param record                    : used to record the state of eval result
      * @return : true if the eval result is satisfied, false if not satisfied, null if the eval result is not set.
      */
     private static Optional<Boolean> isEvalResultSatisfied(ScalarOperatorRewriter rewriter,
@@ -643,6 +650,38 @@ public class PartitionSelector {
             }
         }
         return selectedPartitionIds;
+    }
+
+    /**
+     * Use `_statistics_.external_column_statistics` to get partition statistics for an external table
+     * such as Iceberg/Hudi by its table UUID.
+     */
+    public static Map<String, org.apache.commons.lang3.tuple.Pair<Long, Long>> getExternalTablePartitionStats(Table table) {
+        String sql = String.format(EXTERNAL_TABLE_PARTITION_META_TEMPLATE, table.getUUID());
+        LOG.info("Get external table partition stats by sql: {}", sql);
+        List<TResultBatch> batch = SimpleExecutor.getRepoExecutor().executeDQL(sql);
+        return deserializeExternalStatisticsResult(batch);
+    }
+
+    private static Map<String, org.apache.commons.lang3.tuple.Pair<Long, Long>> deserializeExternalStatisticsResult(
+            List<TResultBatch> batches) {
+        Map<String, org.apache.commons.lang3.tuple.Pair<Long, Long>> result = new HashMap<>();
+        for (TResultBatch batch : ListUtils.emptyIfNull(batches)) {
+            for (ByteBuffer buffer : batch.getRows()) {
+                ByteBuf copied = Unpooled.copiedBuffer(buffer);
+                String jsonString = copied.toString(Charset.defaultCharset());
+                List<String> data = MetaFunctions.LookupRecord.fromJson(jsonString).data;
+
+                if (data != null && data.size() >= 3) {
+                    String partitionName = data.get(0);
+                    long rowCount = Long.parseLong(data.get(1));
+                    long dataSize = Long.parseLong(data.get(2));
+
+                    result.put(partitionName, org.apache.commons.lang3.tuple.Pair.of(rowCount, dataSize));
+                }
+            }
+        }
+        return result;
     }
 
     /**
